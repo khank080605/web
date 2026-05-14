@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { resolveColor } from '../../utils/colorConfig';
 
 const ProductCard = ({ product, openTryOn }) => {
   // Assume the product might have multiple variants. We use the first variant for default display.
@@ -7,30 +8,6 @@ const ProductCard = ({ product, openTryOn }) => {
   const image = defaultVariant.image || 'https://via.placeholder.com/400';
   const colors = product.variants ? [...new Set(product.variants.map(v => v.color || ''))].filter(Boolean) : [];
 
-  // Normalize and map common Vietnamese color names (or other human-friendly names)
-  const normalize = (s = '') =>
-    s
-      .toString()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .trim();
-
-  const mapVietnameseColor = (raw) => {
-    if (!raw) return 'transparent';
-    const value = raw.toString().trim();
-    // If it's already a hex or valid CSS color (starts with # or a known keyword), return as-is
-    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) return value;
-    const n = normalize(value);
-    if (n.includes('vang') || n.includes('kim')) return '#d4af37'; // gold
-    if (n.includes('bac') || n.includes('silver')) return '#c0c0c0';
-    if (n.includes('den')) return '#000000';
-    if (n.includes('doi') || n.includes('moi') || n.includes('tortoise') || n.includes('doi moi')) return '#8b5e3c';
-    if (n.includes('hong') || n.includes('rose')) return '#f4c2c2';
-    if (n.includes('trong') || n.includes('transparent') || n.includes('khong')) return 'transparent';
-    // fallback: return the raw value (may be English color name like "Black")
-    return value;
-  };
 
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
@@ -64,7 +41,7 @@ const ProductCard = ({ product, openTryOn }) => {
                <div
                 key={index}
                 className="w-4 h-4 rounded-full border border-outline"
-                style={{ backgroundColor: mapVietnameseColor(color) }}
+                style={{ backgroundColor: resolveColor(color) }}
                ></div>
              ))}
             {colors.length > 3 && (

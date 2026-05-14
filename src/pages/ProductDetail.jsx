@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Breadcrumbs from '../components/layout/Breadcrumbs';
 import api from '../services/api';
 import ProductCard from '../components/product/ProductCard';
+import { resolveColor } from '../utils/colorConfig';
 import VirtualTryOnModal from '../components/try-on/VirtualTryOnModal';
 
 const ProductDetail = () => {
@@ -254,9 +255,9 @@ const ProductDetail = () => {
                   onClick={() => setSelectedVariant(variant)}
                   aria-label={`Select ${variant.color}`} 
                   title={variant.color}
-                  // Using a fallback mapping for colors if we don't have hex codes in DB
+                  // Color comes from config_color asset (with fallbacks)
                   className={`w-10 h-10 rounded-full border-2 ${selectedVariant?.variant_id === variant.variant_id ? 'border-secondary' : 'border-outline-variant'} ring-2 ring-transparent ring-offset-2 hover:ring-outline-variant transition-all focus:outline-none`}
-                  style={{backgroundColor: variant.color.includes('Đen') ? 'black' : variant.color.includes('Vàng') ? '#d4af37' : variant.color.includes('Bạc') ? '#c0c0c0' : '#8B4513'}}
+                  style={{ backgroundColor: resolveColor(variant.color) }}
                 ></button>
               ))}
             </div>
