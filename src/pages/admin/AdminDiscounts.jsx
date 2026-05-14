@@ -269,7 +269,7 @@ const AdminDiscounts = () => {
       {/* Manage Products Modal */}
       {selectedDiscount && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl w-full max-w-xl max-h-[80vh] overflow-y-auto">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl w-full max-w-5xl max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between p-md border-b border-outline-variant sticky top-0 bg-surface-container-lowest">
               <div>
                 <h3 className="font-headline-sm text-on-surface">Products for <span className="text-secondary">{selectedDiscount.type_discount} {formatValue(selectedDiscount)}</span></h3>

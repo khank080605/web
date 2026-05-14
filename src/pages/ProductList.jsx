@@ -26,6 +26,7 @@ const ProductList = () => {
   const [maxPrice, setMaxPrice] = useState(searchParams.get('max_price') || '');
 
   const currentPage  = parseInt(searchParams.get('page'))       || 1;
+  const currentLimit = parseInt(searchParams.get('limit'))      || 16;
   const currentCat   = searchParams.get('category_id')          || '';
   const currentBrand = searchParams.get('brand_id')             || '';
   const currentSort  = searchParams.get('sort')                 || 'newest';
@@ -56,8 +57,8 @@ const ProductList = () => {
     setError('');
     try {
       const params = new URLSearchParams(searchParams);
-            // Use limit=8 (multiple of 4 columns, 2 rows) so each page fills a 4x2 grid
-      if (!params.has('limit')) params.set('limit', '8');
+            // Default limit if not present
+            if (!params.has('limit')) params.set('limit', String(16));
       const res = await api.get(`/products?${params.toString()}`);
       const data = res.data.data || {};
       setProducts(data.products || []);
@@ -267,18 +268,30 @@ const ProductList = () => {
               {loading ? '...' : `${totalItems} product${totalItems !== 1 ? 's' : ''}`}
             </p>
           </div>
+          <div className="flex items-center gap-sm">
+            <select
+              className="font-body-sm text-body-sm border border-outline-variant rounded px-sm py-1.5 bg-surface-container-lowest focus:border-secondary focus:outline-none"
+              onChange={e => setParam('sort', e.target.value)}
+              value={currentSort}
+            >
+              <option value="newest">Newest Arrivals</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="name_asc">Name: A to Z</option>
+              <option value="name_desc">Name: Z to A</option>
+            </select>
 
-          <select
-            className="font-body-sm text-body-sm border border-outline-variant rounded px-sm py-1.5 bg-surface-container-lowest focus:border-secondary focus:outline-none"
-            onChange={e => setParam('sort', e.target.value)}
-            value={currentSort}
-          >
-            <option value="newest">Newest Arrivals</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-            <option value="name_asc">Name: A to Z</option>
-            <option value="name_desc">Name: Z to A</option>
-          </select>
+            <label className="font-body-sm text-on-surface-variant">Per page</label>
+            <select
+              className="font-body-sm text-body-sm border border-outline-variant rounded px-sm py-1.5 bg-surface-container-lowest focus:border-secondary focus:outline-none"
+              onChange={e => setParam('limit', e.target.value)}
+              value={String(currentLimit)}
+            >
+              <option value="16">16</option>
+              <option value="24">24</option>
+              <option value="32">32</option>
+            </select>
+          </div>
         </div>
 
         {/* Grid */}

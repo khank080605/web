@@ -31,7 +31,10 @@ const Cart = () => {
 
   const selectedItems = items.filter(item => !unselectedIds.has(item.variant_id));
   const selectedVariantIds = selectedItems.map(i => i.variant_id);
-  const subtotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = selectedItems.reduce(
+    (sum, item) => sum + (item.line_total ?? item.price * item.quantity),
+    0,
+  );
   const tax = subtotal * 0.1; // 10% tax example
   const finalTotal = subtotal + tax;
 
@@ -109,7 +112,14 @@ const Cart = () => {
                   </div>
                 </div>
                 <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center mt-sm sm:mt-0 gap-sm">
-                  <span className="font-headline-sm text-headline-sm text-on-background">{formatPrice(item.price)}</span>
+                  {item.discount && item.original_price > item.price ? (
+                    <div className="flex flex-col sm:items-end">
+                      <span className="font-headline-sm text-headline-sm text-error">{formatPrice(item.price)}</span>
+                      <span className="text-xs text-on-surface-variant line-through">{formatPrice(item.original_price)}</span>
+                    </div>
+                  ) : (
+                    <span className="font-headline-sm text-headline-sm text-on-background">{formatPrice(item.price)}</span>
+                  )}
                   
                   {/* Quantity Selector */}
                   <div className="flex items-center border border-outline-variant rounded-full bg-surface">
@@ -167,21 +177,7 @@ const Cart = () => {
               </div>
             </div>
             
-            {/* Coupon Field */}
-            <div className="mb-lg">
-              <label htmlFor="coupon" className="sr-only">Apply Coupon</label>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  id="coupon" 
-                  placeholder="Promo code" 
-                  className="w-full bg-surface border border-outline-variant rounded-lg px-sm py-2 font-body-sm text-body-sm focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all"
-                />
-                <button className="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-md py-2 rounded-lg hover:bg-secondary hover:text-on-secondary transition-colors uppercase tracking-wider">
-                  Apply
-                </button>
-              </div>
-            </div>
+
             
             <button 
               onClick={handleProceedToCheckout}

@@ -13,7 +13,10 @@ export const CartProvider = ({ children }) => {
 
   // ─── helpers ───────────────────────────────────────────────
   const calcTotal = (cartItems) =>
-    cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    cartItems.reduce(
+      (sum, item) => sum + (item.line_total ?? item.price * item.quantity),
+      0,
+    );
 
   // ─── localStorage fallback (guest / unauthenticated) ───────
   const saveLocal = (cartItems) => {
@@ -49,7 +52,9 @@ export const CartProvider = ({ children }) => {
       // Map unit_price to price so Cart UI can use item.price
       const cartItems = (data.items || (Array.isArray(data) ? data : [])).map(item => ({
         ...item,
-        price: item.unit_price || item.price,
+        price: item.unit_price ?? item.price,
+        original_price: item.original_price ?? item.price,
+        discount: item.discount ?? null,
       }));
       setItems(cartItems);
       setTotalAmount(calcTotal(cartItems));

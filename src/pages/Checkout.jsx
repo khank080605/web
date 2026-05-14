@@ -15,7 +15,10 @@ const Checkout = () => {
     ? items.filter(i => selectedVariantIds.includes(i.variant_id))
     : items;
   
-  const totalAmount = checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalAmount = checkoutItems.reduce(
+    (sum, item) => sum + (item.line_total ?? item.price * item.quantity),
+    0,
+  );
 
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState([]);
@@ -261,7 +264,14 @@ const Checkout = () => {
                       <p className="font-body-sm text-on-surface-variant mt-xs text-xs">{item.color} - Qty: {item.quantity}</p>
                     </div>
                     <div className="text-right mt-sm">
-                      <span className="font-body-md font-bold">{formatPrice(item.price * item.quantity)}</span>
+                      {item.discount && item.original_price > item.price ? (
+                        <div>
+                          <span className="font-body-md font-bold text-error block">{formatPrice(item.price * item.quantity)}</span>
+                          <span className="text-xs text-on-surface-variant line-through">{formatPrice(item.original_price * item.quantity)}</span>
+                        </div>
+                      ) : (
+                        <span className="font-body-md font-bold">{formatPrice(item.price * item.quantity)}</span>
+                      )}
                     </div>
                   </div>
                 </div>
