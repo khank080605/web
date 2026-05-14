@@ -167,21 +167,7 @@ const Cart = () => {
               </div>
             </div>
             
-            {/* Coupon Field */}
-            <div className="mb-lg">
-              <label htmlFor="coupon" className="sr-only">Apply Coupon</label>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  id="coupon" 
-                  placeholder="Promo code" 
-                  className="w-full bg-surface border border-outline-variant rounded-lg px-sm py-2 font-body-sm text-body-sm focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all"
-                />
-                <button className="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-md py-2 rounded-lg hover:bg-secondary hover:text-on-secondary transition-colors uppercase tracking-wider">
-                  Apply
-                </button>
-              </div>
-            </div>
+            {/* Coupon field removed per request */}
             
             <button 
               onClick={handleProceedToCheckout}
