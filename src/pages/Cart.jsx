@@ -177,8 +177,6 @@ const Cart = () => {
               </div>
             </div>
             
-
-            
             <button 
               onClick={handleProceedToCheckout}
               disabled={selectedVariantIds.length === 0}
