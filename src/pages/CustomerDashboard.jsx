@@ -235,14 +235,19 @@ const CustomerDashboard = () => {
 const ProfileTab = () => {
   const { user, updateUser } = useAuth();
   const [fullName, setFullName] = useState(user?.fullName || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api.put('/auth/profile', { fullName });
-      updateUser(res.data.data.user); // Refresh user context locally
+      const res = await api.put('/auth/profile', { fullName, phone });
+      // Handle both response formats for compatibility
+      const updatedUser = res.data.user || res.data.data?.user;
+      if (updatedUser) {
+        updateUser(updatedUser);
+      }
       alert('Profile updated successfully!');
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update profile.');
@@ -251,14 +256,29 @@ const ProfileTab = () => {
     }
   };
 
+  const hasChanges = fullName !== user?.fullName || phone !== user?.phone;
+
   return (
     <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md md:p-lg">
-      <h2 className="font-headline-md text-on-background mb-md">My Profile</h2>
+      <div className="mb-lg">
+        <h2 className="font-headline-md text-on-background mb-xs">My Profile</h2>
+        <p className="font-body-md text-on-surface-variant">Manage your personal information</p>
+      </div>
+      
       <form onSubmit={handleSubmit} className="space-y-md max-w-[448px]">
+        {/* Email - Disabled */}
         <div>
-          <label className="block font-label-md text-on-surface-variant mb-1">Email</label>
-          <input type="email" disabled value={user?.email || ''} className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-md text-on-surface-variant cursor-not-allowed" />
+          <label className="block font-label-md text-on-surface-variant mb-1">Email Address</label>
+          <input 
+            type="email" 
+            disabled 
+            value={user?.email || ''} 
+            className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-md text-on-surface-variant cursor-not-allowed font-body-md" 
+          />
+          <p className="text-label-sm text-on-surface-variant mt-1">Email cannot be changed</p>
         </div>
+
+        {/* Full Name */}
         <div>
           <label className="block font-label-md text-on-surface-variant mb-1">Full Name</label>
           <input 
@@ -266,16 +286,49 @@ const ProfileTab = () => {
             required 
             value={fullName} 
             onChange={e => setFullName(e.target.value)} 
-            className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md focus:border-secondary focus:ring-1 focus:ring-secondary text-body-md" 
+            className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md focus:border-secondary focus:ring-1 focus:ring-secondary text-body-md transition-all" 
+            placeholder="Enter your full name"
           />
         </div>
-        <button 
-          type="submit" 
-          disabled={loading || fullName === user?.fullName}
-          className="bg-primary text-on-primary font-label-md py-2 px-lg rounded-lg hover:bg-inverse-surface transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Saving...' : 'Save Changes'}
-        </button>
+
+        {/* Phone Number */}
+        <div>
+          <label className="block font-label-md text-on-surface-variant mb-1">Phone Number</label>
+          <input 
+            type="tel" 
+            value={phone} 
+            onChange={e => setPhone(e.target.value)} 
+            className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md focus:border-secondary focus:ring-1 focus:ring-secondary text-body-md transition-all" 
+            placeholder="e.g. 0987654320"
+          />
+          <p className="text-label-sm text-on-surface-variant mt-1">Vietnamese mobile numbers only</p>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex gap-sm pt-md">
+          <button 
+            type="submit" 
+            disabled={loading || !hasChanges}
+            className="bg-primary text-on-primary font-label-md py-2 px-lg rounded-lg hover:bg-inverse-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-xs"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {loading ? 'hourglass_empty' : 'check'}
+            </span>
+            {loading ? 'Saving...' : 'Save Changes'}
+          </button>
+          {hasChanges && (
+            <button 
+              type="button" 
+              onClick={() => {
+                setFullName(user?.fullName || '');
+                setPhone(user?.phone || '');
+              }}
+              className="border border-outline-variant text-on-surface-variant font-label-md py-2 px-lg rounded-lg hover:bg-surface-container transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
     </section>
   );

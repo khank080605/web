@@ -66,12 +66,16 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'UPDATE_USER', payload: userData });
   };
 
+  const setPhone = (phone) => {
+    updateUser({ phone });
+  };
+
   const logout = () => {
     dispatch({ type: 'LOGOUT' });
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, updateUser, logout }}>
+    <AuthContext.Provider value={{ ...state, login, updateUser, logout, setPhone }}>
       {children}
     </AuthContext.Provider>
   );
