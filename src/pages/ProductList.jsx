@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import Breadcrumbs from '../components/layout/Breadcrumbs';
 import ProductCard from '../components/product/ProductCard';
+import VirtualTryOnModal from '../components/try-on/VirtualTryOnModal';
 import api from '../services/api';
 
 const ProductList = () => {
@@ -9,6 +11,8 @@ const ProductList = () => {
   const [error, setError] = useState('');
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [selectedGlasses, setSelectedGlasses] = useState(null);
+  const [isTryOnOpen, setIsTryOnOpen] = useState(false);
 
   // Dynamic filter data from API
   const [categories, setCategories] = useState([]);
@@ -107,8 +111,29 @@ const ProductList = () => {
   const formatPrice = (p) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p);
 
+  const openTryOn = (glasses) => {
+    setSelectedGlasses(glasses);
+    setIsTryOnOpen(true);
+  };
+
+  const closeTryOn = () => {
+    setIsTryOnOpen(false);
+    setSelectedGlasses(null);
+  };
+
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter py-xl">
+      <div className="md:col-span-12">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl px-lg py-md mb-md">
+          <Breadcrumbs
+            items={[
+              { label: 'Home', to: '/' },
+              { label: 'Products' },
+            ]}
+          />
+        </div>
+      </div>
 
       {/* ── Sidebar Filters ── */}
       <aside className="md:col-span-3 lg:col-span-2 hidden md:block">
@@ -263,7 +288,11 @@ const ProductList = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
             {products.map(product => (
-              <ProductCard key={product.product_id} product={product} />
+              <ProductCard
+                key={product.product_id}
+                product={product}
+                openTryOn={openTryOn}
+              />
             ))}
           </div>
         )}
@@ -300,6 +329,12 @@ const ProductList = () => {
         )}
       </section>
     </div>
+    <VirtualTryOnModal
+      isOpen={isTryOnOpen}
+      glasses={selectedGlasses}
+      onClose={closeTryOn}
+    />
+    </>
   );
 };
 

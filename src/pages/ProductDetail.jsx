@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import Breadcrumbs from '../components/layout/Breadcrumbs';
 import api from '../services/api';
 import ProductCard from '../components/product/ProductCard';
+import VirtualTryOnModal from '../components/try-on/VirtualTryOnModal';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -13,6 +15,8 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedGlasses, setSelectedGlasses] = useState(null);
+  const [isTryOnOpen, setIsTryOnOpen] = useState(false);
   
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [lensType, setLensType] = useState('single');
@@ -74,6 +78,19 @@ const ProductDetail = () => {
     alert('Added to cart successfully!');
   };
 
+  const openTryOn = (glasses, variant = null) => {
+    setSelectedGlasses({
+      ...glasses,
+      selectedVariant: variant || glasses?.selectedVariant || glasses?.variants?.[0] || null,
+    });
+    setIsTryOnOpen(true);
+  };
+
+  const closeTryOn = () => {
+    setIsTryOnOpen(false);
+    setSelectedGlasses(null);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-xl min-h-[60vh]">
@@ -104,16 +121,15 @@ const ProductDetail = () => {
 
   return (
     <div className="py-lg">
-      {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-lg">
-        <ol className="flex items-center space-x-2 text-body-sm text-on-surface-variant">
-          <li><Link className="hover:text-secondary transition-colors" to="/">Home</Link></li>
-          <li><span className="material-symbols-outlined text-[16px]">chevron_right</span></li>
-          <li><Link className="hover:text-secondary transition-colors" to="/products">Products</Link></li>
-          <li><span className="material-symbols-outlined text-[16px]">chevron_right</span></li>
-          <li aria-current="page" className="text-on-surface font-semibold">{product.product_name}</li>
-        </ol>
-      </nav>
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl px-lg py-md mb-lg">
+        <Breadcrumbs
+          items={[
+            { label: 'Home', to: '/' },
+            { label: 'Products', to: '/products' },
+            { label: product.product_name },
+          ]}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-xl">
         {/* Product Images Gallery */}
@@ -127,7 +143,11 @@ const ProductDetail = () => {
               onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&q=80&w=800' }}
             />
             {/* Virtual Try-On Floating CTA */}
-            <button className="absolute bottom-md right-md bg-white border border-outline-variant text-primary font-label-md text-label-md px-sm py-xs rounded-full shadow-md hover:border-secondary hover:text-secondary transition-all flex items-center gap-xs">
+            <button
+              type="button"
+              onClick={() => openTryOn(product, selectedVariant)}
+              className="absolute bottom-md right-md bg-white border border-outline-variant text-primary font-label-md text-label-md px-sm py-xs rounded-full shadow-md hover:border-secondary hover:text-secondary transition-all flex items-center gap-xs"
+            >
               <span className="material-symbols-outlined text-[18px]">face</span>
               Virtual Try-On
             </button>
@@ -343,7 +363,11 @@ const ProductDetail = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
             {relatedProducts.map(rel => (
-               <ProductCard key={rel.product_id} product={rel} />
+               <ProductCard
+                key={rel.product_id}
+                product={rel}
+                openTryOn={openTryOn}
+               />
             ))}
           </div>
         </section>
@@ -356,6 +380,11 @@ const ProductDetail = () => {
           onStatsChange={setReviewStats}
         />
       )}
+      <VirtualTryOnModal
+        isOpen={isTryOnOpen}
+        glasses={selectedGlasses}
+        onClose={closeTryOn}
+      />
     </div>
   );
 };

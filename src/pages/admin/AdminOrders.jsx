@@ -96,8 +96,12 @@ const OrderDetailModal = ({ orderId, onClose }) => {
             <div className="bg-surface-container p-sm rounded-lg grid grid-cols-2 gap-xs text-body-sm">
               <div>
                 <p className="text-on-surface-variant font-label-md text-label-md uppercase tracking-wider text-xs mb-1">Customer</p>
-                <p className="font-semibold text-on-surface">{order.user?.full_name || order.User?.full_name || 'N/A'}</p>
-                <p className="text-on-surface-variant">{order.user?.email || order.User?.email || ''}</p>
+                <p className="font-semibold text-on-surface">
+                  {order.user?.full_name || order.user?.user_name || order.user?.email || order.User?.full_name || order.User?.user_name || order.User?.email || 'N/A'}
+                </p>
+                <p className="text-on-surface-variant">
+                  {order.user?.email || order.User?.email || order.user?.user_name || order.User?.user_name || ''}
+                </p>
               </div>
               <div>
                 <p className="text-on-surface-variant font-label-md text-label-md uppercase tracking-wider text-xs mb-1">Order Date</p>
