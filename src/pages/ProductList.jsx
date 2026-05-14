@@ -50,12 +50,15 @@ const ProductList = () => {
     loadFilters();
   }, []);
 
-  // ── Fetch products whenever URL params change ──────────────
+    // ── Fetch products whenever URL params change ──────────────
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await api.get(`/products?${searchParams.toString()}`);
+      const params = new URLSearchParams(searchParams);
+            // Use limit=8 (multiple of 4 columns, 2 rows) so each page fills a 4x2 grid
+      if (!params.has('limit')) params.set('limit', '8');
+      const res = await api.get(`/products?${params.toString()}`);
       const data = res.data.data || {};
       setProducts(data.products || []);
       setTotalPages(data.totalPages || 1);
@@ -77,7 +80,7 @@ const ProductList = () => {
     setMaxPrice(searchParams.get('max_price') || '');
   }, [searchParams]);
 
-  // ── Helpers ────────────────────────────────────────────────
+    // ── Helpers ────────────────────────────────────────────────
   const setParam = (key, value) => {
     const p = new URLSearchParams(searchParams);
     if (value) {
@@ -85,7 +88,17 @@ const ProductList = () => {
     } else {
       p.delete(key);
     }
-    p.set('page', '1');
+    // Reset to page 1 for filter/sort changes, but NOT for page changes
+    // The page button handlers call goToPage directly
+    if (key !== 'page') {
+      p.set('page', '1');
+    }
+    setSearchParams(p);
+  };
+
+  const goToPage = (page) => {
+    const p = new URLSearchParams(searchParams);
+    p.set('page', String(page));
     setSearchParams(p);
   };
 
@@ -297,33 +310,63 @@ const ProductList = () => {
           </div>
         )}
 
-        {/* Pagination */}
+                                {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-lg flex justify-center items-center gap-sm">
+          <div className="mt-lg flex justify-center items-center gap-1.5 flex-wrap">
             <button
               disabled={currentPage <= 1}
-              onClick={() => setParam('page', String(currentPage - 1))}
+              onClick={() => goToPage(currentPage - 1)}
               className="w-10 h-10 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-secondary transition-colors disabled:opacity-40"
             >
-              <span className="material-symbols-outlined">chevron_left</span>
+              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              const pg = i + 1;
-              return (
-                <button key={pg}
-                  onClick={() => setParam('page', String(pg))}
-                  className={`w-10 h-10 flex items-center justify-center rounded font-body-sm font-bold transition-colors ${pg === currentPage ? 'bg-primary text-on-primary' : 'border border-outline-variant hover:bg-surface-container-high'}`}>
-                  {pg}
-                </button>
-              );
-            })}
-            {totalPages > 5 && <span className="text-on-surface-variant">…</span>}
+            {(() => {
+              // Show ALL page numbers. If totalPages is large, show first, last, and a window around current.
+              const pages = [];
+              const maxVisible = 10; // show up to 10 numbers before collapsing
+              if (totalPages <= maxVisible) {
+                // Show all pages
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+              } else {
+                // Always show first page
+                pages.push(1);
+                // Window around current page
+                let start = Math.max(2, currentPage - 2);
+                let end = Math.min(totalPages - 1, currentPage + 2);
+                // Adjust window to show enough pages
+                if (currentPage <= 4) {
+                  start = 2;
+                  end = Math.min(totalPages - 1, 6);
+                }
+                if (currentPage >= totalPages - 3) {
+                  start = Math.max(2, totalPages - 5);
+                  end = totalPages - 1;
+                }
+                if (start > 2) pages.push('ellipsis-start');
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (end < totalPages - 1) pages.push('ellipsis-end');
+                // Always show last page
+                pages.push(totalPages);
+              }
+              return pages.map((pg, idx) => {
+                if (pg === 'ellipsis-start' || pg === 'ellipsis-end') {
+                  return <span key={pg} className="text-on-surface-variant px-1">…</span>;
+                }
+                return (
+                  <button key={pg}
+                    onClick={() => goToPage(pg)}
+                    className={`min-w-[36px] h-10 flex items-center justify-center rounded font-body-sm font-bold transition-colors px-2 ${pg === currentPage ? 'bg-primary text-on-primary' : 'border border-outline-variant hover:bg-surface-container-high'}`}>
+                    {pg}
+                  </button>
+                );
+              });
+            })()}
             <button
               disabled={currentPage >= totalPages}
-              onClick={() => setParam('page', String(currentPage + 1))}
+              onClick={() => goToPage(currentPage + 1)}
               className="w-10 h-10 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-secondary transition-colors disabled:opacity-40"
             >
-              <span className="material-symbols-outlined">chevron_right</span>
+              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
           </div>
         )}

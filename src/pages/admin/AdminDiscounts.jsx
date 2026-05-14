@@ -34,7 +34,7 @@ const AdminDiscounts = () => {
   // ── fetch all products for attach dropdown ───────────────────
   const fetchAllProducts = async () => {
     try {
-      const res = await api.get('/products', { params: { limit: 200 } });
+      const res = await api.get('/products', { params: { limit: 100 } });
       const data = res.data.data || res.data || {};
       setAllProducts(Array.isArray(data) ? data : data.products || []);
     } catch (err) { console.error(err); }
@@ -100,13 +100,15 @@ const AdminDiscounts = () => {
   };
 
   // ── Manage Products Modal ────────────────────────────────────
-  const openManageProducts = async (discount) => {
+    const openManageProducts = async (discount) => {
     setSelectedDiscount(discount);
+    setAttachProductId('');
+    setProducts([]);
     setProductsLoading(true);
     try {
       const res = await api.get(`/discounts/${discount.discount_id}`);
       const data = res.data.data || res.data || {};
-      setProducts(data.products || []);
+      setProducts(Array.isArray(data.products) ? data.products : []);
     } catch (err) {
       console.error('Failed to load discount products', err);
       setProducts([]);
@@ -126,10 +128,11 @@ const AdminDiscounts = () => {
     }
   };
 
-  const handleDetachProduct = async (productId) => {
+    const handleDetachProduct = async (productId) => {
     try {
       await api.delete(`/discounts/${selectedDiscount.discount_id}/products/${productId}`);
-      setProducts(prev => prev.filter(p => p.product_id !== productId));
+      // Re-fetch products from server to keep UI in sync
+      await openManageProducts(selectedDiscount);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to detach product.');
     }
@@ -278,21 +281,23 @@ const AdminDiscounts = () => {
             </div>
 
             <div className="p-md space-y-md">
-              {/* Attach Product */}
-              <div className="flex gap-sm items-end">
+                            {/* Attach Product */}
+                            <div className="flex gap-sm items-end">
                 <div className="flex-1">
                   <label className="block font-label-md text-on-surface-variant mb-1">Attach Product</label>
+                  <p className="text-xs text-on-surface-variant mb-2">⚠️ A product can only have <strong>one active discount</strong> at a time. Attaching will fail if the product already has an active discount.</p>
                   <select value={attachProductId} onChange={(e) => setAttachProductId(e.target.value)}
-                    className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md focus:border-secondary focus:ring-1 focus:ring-secondary text-body-sm">
-                    <option value="">Select a product...</option>
-                    {allProducts
+                    className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md focus:border-secondary focus:ring-1 focus:ring-secondary text-body-sm"
+                    disabled={productsLoading}>
+                    <option value="">{productsLoading ? 'Loading products...' : 'Select a product...'}</option>
+                    {!productsLoading && allProducts
                       .filter(p => !products.some(ap => ap.product_id === p.product_id))
                       .map(p => (
                         <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
                       ))}
                   </select>
                 </div>
-                <button onClick={handleAttachProduct} disabled={!attachProductId}
+                <button onClick={handleAttachProduct} disabled={!attachProductId || productsLoading}
                   className="bg-secondary text-on-secondary px-md py-2 rounded-lg font-label-md disabled:opacity-50 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[18px]">add_link</span>
                   Attach

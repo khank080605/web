@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import Breadcrumbs from '../components/layout/Breadcrumbs';
@@ -10,7 +10,8 @@ import VirtualTryOnModal from '../components/try-on/VirtualTryOnModal';
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const { addItem } = useCart();
+    const { addItem } = useCart();
+  const navigate = useNavigate();
   
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -19,17 +20,11 @@ const ProductDetail = () => {
   const [selectedGlasses, setSelectedGlasses] = useState(null);
   const [isTryOnOpen, setIsTryOnOpen] = useState(false);
   
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [lensType, setLensType] = useState('single');
+      const [selectedVariant, setSelectedVariant] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [addedToCart, setAddedToCart] = useState(false);
   // Live review stats — updated by ReviewsSection
   const [reviewStats, setReviewStats] = useState({ avg: 0, count: 0 });
-  
-  // Calculate price based on lens type (example pricing)
-  const lensPriceMap = {
-    single: 0,
-    progressive: 1000000,
-    non_prescription: 0
-  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -58,12 +53,8 @@ const ProductDetail = () => {
 
     fetchProduct();
   }, [id]);
-
-  const handleAddToCart = () => {
+      const handleAddToCart = () => {
     if (!selectedVariant) return;
-    
-    // Total price is base variant price + lens price
-    const finalPrice = selectedVariant.price + lensPriceMap[lensType];
     
     addItem({
       variant_id: selectedVariant.variant_id,
@@ -71,12 +62,17 @@ const ProductDetail = () => {
       product_name: product.product_name,
       color: selectedVariant.color,
       image: selectedVariant.image,
-      price: finalPrice,
-      quantity: 1,
-      lensType
+      price: selectedVariant.price,
+      quantity,
     });
     
-    alert('Added to cart successfully!');
+    setAddedToCart(true);
+    window.scrollTo({ top: document.querySelector('.actions-section')?.offsetTop - 100 || 0, behavior: 'smooth' });
+  };
+
+  const handleUndo = () => {
+    setAddedToCart(false);
+    setQuantity(1);
   };
 
   const openTryOn = (glasses, variant = null) => {
@@ -113,11 +109,26 @@ const ProductDetail = () => {
     );
   }
 
-  const formatPrice = (price) => {
+    const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
-  const finalPrice = selectedVariant ? selectedVariant.price + lensPriceMap[lensType] : 0;
+  // Discount logic for detail page
+  const discount = product.discount || null;
+  const getDiscountedPrice = (originalPrice) => {
+    if (!discount) return originalPrice;
+    if (discount.type_discount === 'Percent') {
+      return Math.max(0, originalPrice - (originalPrice * discount.discount_value / 100));
+    }
+    return Math.max(0, originalPrice - discount.discount_value);
+  };
+  const formatDiscountBadge = (d) => {
+    if (d.type_discount === 'Percent') return `-${d.discount_value}%`;
+    return `-${formatPrice(d.discount_value)}`;
+  };
+
+  const finalPrice = selectedVariant ? selectedVariant.price : 0;
+  const finalDiscountedPrice = getDiscountedPrice(finalPrice);
   const imageSrc = selectedVariant?.image?.startsWith('http') ? selectedVariant.image : `http://localhost:3000/uploads/${selectedVariant?.image}`;
 
   return (
@@ -136,8 +147,17 @@ const ProductDetail = () => {
         {/* Product Images Gallery */}
         <section className="lg:col-span-7 flex flex-col gap-sm">
           {/* Main Image */}
-          <div className="w-full bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden aspect-[4/3] flex items-center justify-center relative">
-            <img 
+                    <div className="w-full bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden aspect-[4/3] flex items-center justify-center relative">
+            {/* Discount badge - top left corner */}
+            {discount && (
+              <div className="absolute top-0 left-0 z-10">
+                <div className="bg-error text-on-error text-sm font-bold px-3 py-1.5 rounded-br-xl shadow-md flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[16px]">local_offer</span>
+                  {formatDiscountBadge(discount)}
+                </div>
+              </div>
+            )}
+            <img  
               alt={product.product_name} 
               className="w-full h-full object-contain p-md" 
               src={imageSrc}
@@ -179,9 +199,19 @@ const ProductDetail = () => {
         <section className="lg:col-span-5 flex flex-col gap-lg">
           {/* Header & Price */}
           <div className="flex flex-col gap-xs border-b border-outline-variant pb-md">
-            <h1 className="font-headline-lg text-headline-lg text-on-background">{product.product_name}</h1>
+                        <h1 className="font-headline-lg text-headline-lg text-on-background">{product.product_name}</h1>
             <div className="flex items-center justify-between">
-              <span className="font-headline-md text-headline-md text-primary">{formatPrice(finalPrice)}</span>
+              <div className="flex items-center gap-sm">
+                {discount ? (
+                  <>
+                    <span className="font-headline-md text-headline-md text-error">{formatPrice(finalDiscountedPrice)}</span>
+                    <span className="font-body-md text-body-md text-on-surface-variant line-through">{formatPrice(finalPrice)}</span>
+                    <span className="bg-error/20 text-error text-xs font-bold px-2 py-0.5 rounded-full">{formatDiscountBadge(discount)}</span>
+                  </>
+                ) : (
+                  <span className="font-headline-md text-headline-md text-primary">{formatPrice(finalPrice)}</span>
+                )}
+              </div>
               <div className="flex items-center gap-1 text-secondary">
                 {reviewStats.count > 0 ? (
                   <>
@@ -257,82 +287,69 @@ const ProductDetail = () => {
                   title={variant.color}
                   // Color comes from config_color asset (with fallbacks)
                   className={`w-10 h-10 rounded-full border-2 ${selectedVariant?.variant_id === variant.variant_id ? 'border-secondary' : 'border-outline-variant'} ring-2 ring-transparent ring-offset-2 hover:ring-outline-variant transition-all focus:outline-none`}
-                  style={{ backgroundColor: resolveColor(variant.color) }}
+                                    style={{ backgroundColor: resolveColor(variant.color) }}
                 ></button>
               ))}
             </div>
           </div>
 
-          {/* Lens Selection */}
-          <div className="flex flex-col gap-sm">
-            <label className="font-label-md text-label-md text-on-background uppercase">Lens Type</label>
-            <div className="flex flex-col gap-2">
-              <label className={`flex items-center justify-between p-sm border rounded-lg cursor-pointer transition-colors ${lensType === 'single' ? 'border-secondary bg-surface-container-low' : 'border-outline-variant bg-surface-container-lowest hover:border-secondary hover:bg-surface-container-low'}`}>
-                <div className="flex items-center gap-sm">
-                  <input 
-                    type="radio" 
-                    name="lens_type" 
-                    value="single" 
-                    checked={lensType === 'single'} 
-                    onChange={() => setLensType('single')}
-                    className="text-secondary focus:ring-secondary w-4 h-4 border-outline-variant"
-                  />
-                  <div>
-                    <span className="font-body-md text-body-md text-on-background block font-medium">Single Vision</span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant">For distance or reading</span>
-                  </div>
-                </div>
-                <span className="font-body-md text-body-md font-semibold text-primary">Included</span>
-              </label>
-              
-              <label className={`flex items-center justify-between p-sm border rounded-lg cursor-pointer transition-colors ${lensType === 'progressive' ? 'border-secondary bg-surface-container-low' : 'border-outline-variant bg-surface-container-lowest hover:border-secondary hover:bg-surface-container-low'}`}>
-                <div className="flex items-center gap-sm">
-                  <input 
-                    type="radio" 
-                    name="lens_type" 
-                    value="progressive" 
-                    checked={lensType === 'progressive'} 
-                    onChange={() => setLensType('progressive')}
-                    className="text-secondary focus:ring-secondary w-4 h-4 border-outline-variant"
-                  />
-                  <div>
-                    <span className="font-body-md text-body-md text-on-background block font-medium">Progressive</span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant">Multifocal without lines</span>
-                  </div>
-                </div>
-                <span className="font-body-md text-body-md font-semibold text-primary">{formatPrice(lensPriceMap.progressive)}</span>
-              </label>
-              
-              <label className={`flex items-center justify-between p-sm border rounded-lg cursor-pointer transition-colors ${lensType === 'non_prescription' ? 'border-secondary bg-surface-container-low' : 'border-outline-variant bg-surface-container-lowest hover:border-secondary hover:bg-surface-container-low'}`}>
-                <div className="flex items-center gap-sm">
-                  <input 
-                    type="radio" 
-                    name="lens_type" 
-                    value="non_prescription" 
-                    checked={lensType === 'non_prescription'} 
-                    onChange={() => setLensType('non_prescription')}
-                    className="text-secondary focus:ring-secondary w-4 h-4 border-outline-variant"
-                  />
-                  <div>
-                    <span className="font-body-md text-body-md text-on-background block font-medium">Non-Prescription</span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant">Fashion lenses</span>
-                  </div>
-                </div>
-                <span className="font-body-md text-body-md font-semibold text-primary">Included</span>
-              </label>
+          {/* Quantity + Actions */}
+          <div className="actions-section flex flex-col gap-sm mt-sm">
+            {/* Quantity Selector */}
+            <div className="flex items-center justify-between bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm">
+              <span className="font-label-md text-label-md text-on-surface-variant uppercase">Quantity</span>
+              <div className="flex items-center border border-outline-variant rounded-full bg-surface">
+                <button
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  disabled={addedToCart}
+                  className="p-xs text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-[18px]">remove</span>
+                </button>
+                <span className="font-body-md text-body-md w-10 text-center font-medium">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(q => Math.min(selectedVariant?.stock_quantity || 99, q + 1))}
+                  disabled={addedToCart}
+                  className="p-xs text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="flex flex-col gap-sm mt-sm">
-            <button 
-              onClick={handleAddToCart}
-              disabled={selectedVariant?.stock_quantity === 0}
-              className="w-full bg-primary hover:bg-inverse-surface text-on-primary font-label-md text-label-md py-md px-lg rounded-lg transition-colors flex items-center justify-center gap-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {selectedVariant?.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-              <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
-            </button>
+            {/* Add to Cart Button */}
+            {!addedToCart ? (
+              <button
+                onClick={handleAddToCart}
+                disabled={selectedVariant?.stock_quantity === 0}
+                className="w-full bg-primary hover:bg-inverse-surface text-on-primary font-label-md text-label-md py-md px-lg rounded-lg transition-colors flex items-center justify-center gap-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {selectedVariant?.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
+              </button>
+            ) : (
+              /* Checkout Now + Undo buttons after adding */
+              <div className="flex flex-col gap-sm animate-fade-in">
+                                <button
+                  onClick={() => {
+                    navigate('/checkout', {
+                      state: { selectedVariantIds: [selectedVariant.variant_id] }
+                    });
+                  }}
+                  className="w-full bg-primary hover:bg-inverse-surface text-on-primary font-label-md text-label-md py-md px-lg rounded-lg transition-colors flex items-center justify-center gap-sm shadow-sm"
+                >
+                  Checkout Now
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </button>
+                <button
+                  onClick={handleUndo}
+                  className="w-full border border-outline-variant text-on-surface-variant font-label-md text-label-md py-md px-lg rounded-lg hover:bg-surface-container transition-colors flex items-center justify-center gap-sm"
+                >
+                  <span className="material-symbols-outlined text-[18px]">undo</span>
+                  Undo
+                </button>
+              </div>
+            )}
           </div>
           
           {/* Guarantees */}

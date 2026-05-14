@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { resolveColor } from '../utils/colorConfig';
 
 const Cart = () => {
   const { items, updateQuantity, removeItem } = useCart();
@@ -77,7 +78,7 @@ const Cart = () => {
         {/* Cart Items List */}
         <div className="lg:col-span-8 space-y-md">
           {items.map((item) => (
-            <div key={`${item.variant_id}-${item.lensType}`} className={`bg-surface-container-lowest p-md border rounded-xl flex flex-col sm:flex-row gap-md items-start sm:items-center transition-colors ${!unselectedIds.has(item.variant_id) ? 'border-primary ring-1 ring-primary/20' : 'border-outline-variant opacity-80'}`}>
+            <div key={`${item.variant_id}-${item.color}`} className={`bg-surface-container-lowest p-md border rounded-xl flex flex-col sm:flex-row gap-md items-start sm:items-center transition-colors ${!unselectedIds.has(item.variant_id) ? 'border-primary ring-1 ring-primary/20' : 'border-outline-variant opacity-80'}`}>
               <div className="flex items-center self-stretch sm:self-auto pl-sm pr-xs">
                 <input 
                   type="checkbox" 
@@ -99,7 +100,13 @@ const Cart = () => {
                   <Link to={`/products/${item.product_id}`} className="hover:underline">
                     <h3 className="font-headline-md text-headline-md text-on-background">{item.product_name}</h3>
                   </Link>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">{item.color} / {item.lensType}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span
+                      className="w-3.5 h-3.5 rounded-full border border-outline-variant inline-block"
+                      style={{ backgroundColor: resolveColor(item.color) }}
+                    ></span>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">{item.color}</p>
+                  </div>
                 </div>
                 <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center mt-sm sm:mt-0 gap-sm">
                   <span className="font-headline-sm text-headline-sm text-on-background">{formatPrice(item.price)}</span>
