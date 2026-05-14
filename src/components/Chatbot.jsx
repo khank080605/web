@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import api from '../services/api';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,74 +23,17 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Mock responses based on user input
-  const getMockResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-
-    if (
-      lowerMessage.includes('xin chào') ||
-      lowerMessage.includes('hello') ||
-      lowerMessage.includes('hi')
-    ) {
-      return 'Xin chào! Rất vui được gặp bạn. Tôi là trợ lý khách hàng của Glasscart. Bạn cần hỗ trợ gì?';
-    }
-    if (
-      lowerMessage.includes('giờ') ||
-      lowerMessage.includes('mở') ||
-      lowerMessage.includes('hour') ||
-      lowerMessage.includes('open')
-    ) {
-      return 'Cửa hàng của chúng tôi mở cửa từ 9:00 AM đến 9:00 PM, từ thứ Hai đến Chủ Nhật. Có gì khác tôi có thể giúp bạn không?';
-    }
-    if (
-      lowerMessage.includes('giao') ||
-      lowerMessage.includes('ship') ||
-      lowerMessage.includes('delivery')
-    ) {
-      return 'Chúng tôi cung cấp giao hàng miễn phí cho các đơn hàng trên 500,000 VNĐ. Thời gian giao hàng thường là 2-3 ngày làm việc tại TPHCM. Bạn có các câu hỏi khác không?';
-    }
-    if (
-      lowerMessage.includes('trả') ||
-      lowerMessage.includes('return') ||
-      lowerMessage.includes('hoàn')
-    ) {
-      return 'Chúng tôi cho phép trả hàng trong vòng 30 ngày nếu sản phẩm chưa sử dụng. Vui lòng liên hệ với bộ phận hỗ trợ khách hàng của chúng tôi để biết thêm chi tiết.';
-    }
-    if (
-      lowerMessage.includes('thanh toán') ||
-      lowerMessage.includes('payment') ||
-      lowerMessage.includes('pay')
-    ) {
-      return 'Chúng tôi chấp nhận thanh toán qua thẻ tín dụng, ví điện tử, chuyển khoản ngân hàng, và thanh toán khi nhận hàng (COD).';
-    }
-    if (
-      lowerMessage.includes('kính') ||
-      lowerMessage.includes('mắt') ||
-      lowerMessage.includes('glasses') ||
-      lowerMessage.includes('eyewear')
-    ) {
-      return 'Chúng tôi có một bộ sưu tập rộng rãi các loại kính mắt, bao gồm kính râm, kính gọng, kính gần, và nhiều hơn nữa. Bạn có quan tâm đến loại nào cụ thể không?';
-    }
-    if (
-      lowerMessage.includes('liên hệ') ||
-      lowerMessage.includes('contact') ||
-      lowerMessage.includes('phone')
-    ) {
-      return 'Bạn có thể liên hệ chúng tôi qua:\n📞 Điện thoại: 0123-456-789\n📧 Email: support@glasscart.com\n💬 Chat: Tôi sẽ sẵn sàng giúp bạn!';
-    }
-
-    return 'Cảm ơn bạn đã hỏi! Tôi hiểu bạn đang hỏi về điều đó. Bạn có thể gọi cho chúng tôi hoặc liên hệ qua email để được hỗ trợ tốt hơn. Có gì khác tôi có thể giúp không?';
-  };
-
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
 
     if (!inputValue.trim()) return;
 
+    const currentInput = inputValue;
+
     // Add user message
     const userMessage = {
       id: messages.length + 1,
-      text: inputValue,
+      text: currentInput,
       sender: 'user',
       timestamp: new Date(),
     };
@@ -98,17 +42,42 @@ const Chatbot = () => {
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate bot response delay
-    setTimeout(() => {
+    try {
+      const res = await api.post('/api/chatbot/chat', { message: currentInput });
+      const data = res.data;
+
       const botResponse = {
-        id: messages.length + 2,
-        text: getMockResponse(inputValue),
+        id: Date.now(),
+        text: data.success
+          ? data.answer
+          : 'Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này. Vui lòng thử lại sau.',
         sender: 'bot',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botResponse]);
+    } catch (error) {
+      console.error('Chatbot API error:', error);
+      const errorResponse = {
+        id: Date.now(),
+        text: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau hoặc liên hệ hotline 0123-456-789 để được hỗ trợ.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
       setIsTyping(false);
-    }, 800);
+    }
+  };
+
+  // Render message text with basic markdown support (**bold**)
+  const renderMessageText = (text) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
   };
 
   return (
@@ -171,7 +140,7 @@ const Chatbot = () => {
                   }`}
                 >
                   <p className="font-body-sm text-body-sm whitespace-pre-wrap">
-                    {message.text}
+                    {renderMessageText(message.text)}
                   </p>
                   <span
                     className={`text-label-xs font-label-xs opacity-70 block mt-1 ${
