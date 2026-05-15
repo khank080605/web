@@ -6,7 +6,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: 'Xin chào! 👋 Chúng tôi có thể giúp bạn điều gì hôm nay?',
+      text: 'Xin chào! Trợ lý Vision có thể giúp bạn điều gì hôm nay?',
       sender: 'bot',
       timestamp: new Date(),
     },
@@ -110,7 +110,7 @@ const Chatbot = () => {
                 </span>
               </div>
               <div>
-                <h3 className="font-headline-sm text-headline-sm">Glasscart Support</h3>
+                <h3 className="font-headline-sm text-headline-sm">Vision Assistant</h3>
                 <p className="font-body-sm text-body-sm opacity-90">Online</p>
               </div>
             </div>
